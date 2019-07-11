@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views import generic
 from django.utils import timezone
-from .models import Treballador, Marcatge
+from .models import Treballador, Marcatge, get_client_ip
 
 
 def portal_marcatge(request):
@@ -19,8 +19,8 @@ def marcar_entrada(request):
             'success_message': None,
             'error_message': message,
         })
-
-    done, message = Marcatge.fes_entrada(found)
+    ip = get_client_ip(request)
+    done, message = Marcatge.fes_entrada(found, ip)
     if not done:
         return render(request, 'marcatge/index.html', {
             'success_message': None,
@@ -42,7 +42,8 @@ def marcar_sortida(request):
             'error_message': message,
         })
 
-    done, message = Marcatge.fes_sortida(found)
+    ip = get_client_ip(request)
+    done, message = Marcatge.fes_sortida(found, ip)
     if not done:
         return render(request, 'marcatge/index.html', {
             'success_message': None,

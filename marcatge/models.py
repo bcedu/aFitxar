@@ -6,6 +6,15 @@ from .validators import validate_numeric_char
 from django.utils.translation import gettext as _
 
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
 class Treballador(models.Model):
     nom = models.CharField(max_length=200)
     vat = models.CharField(max_length=20)
@@ -52,7 +61,9 @@ class Treballador(models.Model):
 
 class Marcatge(models.Model):
     entrada = models.DateTimeField()
+    entrada_ip = models.CharField(max_length=16, null=True, blank=True)
     sortida = models.DateTimeField(null=True, blank=True)
+    sortida_ip = models.CharField(null=True, blank=True, max_length=16)
     treballador = models.ForeignKey(Treballador, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -72,18 +83,18 @@ class Marcatge(models.Model):
         return sortida - self.entrada
 
     @staticmethod
-    def fes_entrada(treballador):
+    def fes_entrada(treballador, ip):
         en_marxa = Marcatge.objects.filter(sortida__isnull=True, treballador=treballador)
         if en_marxa:
             return False, _(u"No pots fer una entrada si ja en tens una en marxa. Has de marcar una sortia.")
-        m = Marcatge(entrada=timezone.now(), treballador=treballador)
+        m = Marcatge(entrada=timezone.now(), treballador=treballador, entrada_ip=ip)
         m.save()
         return True, _(u"Entrada realitzada amb èxit")
 
     @staticmethod
-    def fes_sortida(treballador):
+    def fes_sortida(treballador, ip):
         en_marxa = Marcatge.objects.filter(sortida__isnull=True, treballador=treballador)
         if not en_marxa:
             return False, _(u"No pots fer una sortida si no tens cap marcatge en marxa. Has de marcar una entrada.")
-        en_marxa.update(sortida=timezone.now())
+        en_marxa.update(sortida=timezone.now(), sortida_ip=ip)
         return True, _(u"Sortida realitzada amb èxit.")
