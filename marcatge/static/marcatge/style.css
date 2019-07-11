@@ -1,0 +1,83 @@
+.taula_panell {
+    background: whitesmoke;
+
+    width: 100%;
+    height: 100%;
+
+    text-align: center;
+
+    border: 0 solid black;
+    border-spacing: 20px;
+    border-collapse: separate;
+    font-size: xx-large;
+}
+
+
+.taula_panell td {
+    width: 33%;
+}
+
+
+button {
+    border: none;
+    text-align: center;
+    display: inline-block;
+    font-size: 32px;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+}
+
+
+.ax button{
+    background: gainsboro;
+
+}
+.ax button:hover {
+    background: #cdcdcd;
+}
+
+
+.esborrar button {
+    background: khaki;
+}
+.esborrar button:hover {
+    background: #D7CD76;
+}
+
+
+.entrada button {
+    background: lightgreen;
+}
+.entrada button:hover {
+    background: #5aaf5a;
+}
+
+
+.sortida button {
+    background: tomato;
+}
+.sortida button:hover {
+    background: #b9543a;
+}
+
+
+.consulta button {
+    background: lightblue;
+}
+.consulta button:hover {
+    background: #819ca5;
+}
+
+
+.codi input {
+    background: white;
+    border: 1px solid black;
+    width: 100%;
+    height: 100%;
+}
+.codi input {
+    font-size: 64px;
+    text-align: center;
+    padding: 0;
+}
