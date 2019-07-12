@@ -69,7 +69,7 @@ class Marcatge(models.Model):
     def __str__(self):
         name = self.treballador.nom + "  "
         if self.entrada:
-            name = self.entrada.strftime("%d/%m/%Y %H:%M") + " - "
+            name += self.entrada.strftime("%d/%m/%Y %H:%M") + " - "
         if self.sortida:
             name += self.sortida.strftime("%d/%m/%Y %H:%M")
         return name
