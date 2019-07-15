@@ -45,7 +45,7 @@ class Treballador(models.Model):
         marcatges_en_marxa = Marcatge.objects.filter(sortida__isnull=True, treballador=self)
         if marcatges_en_marxa:
             marcatge_en_marxa = marcatges_en_marxa[0]
-            msg += _(u"Tens un marcatge en marxa iniciat a les {0}. ").format(marcatge_en_marxa.entrada.strftime("%d/%m/%Y %H:%M"))
+            msg += _(u"Tens un marcatge en marxa iniciat a les {0}. ").format(marcatge_en_marxa.entrada.strftime("%H:%M del %d/%m/%Y"))
         else:
             msg += _(u"No tens cap marcatge en marxa. ")
 
@@ -55,7 +55,7 @@ class Treballador(models.Model):
         total_spent = timedelta(seconds=0)
         for marcat_avui in marcats_avui:
             total_spent += marcat_avui.get_time_spent()
-        msg += _("\nTotal marcat avui: {0}.").format(str(total_spent))
+        msg += _("\nTotal marcat avui: {0}.").format(str(total_spent).split(".")[0])
         return msg
 
 
