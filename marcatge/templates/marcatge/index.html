@@ -49,18 +49,18 @@
 			<td class="ax">
                 <button onclick="write_password('0')">0</button>
             </td>
-			<td class="esborrar" colspan="2">
+			<td class="esborrar text_button" colspan="2">
                 <button onclick="delete_password()">Esborrar</button>
             </td>
 		</tr>
 		<tr>
-			<td class="consulta">
+			<td class="consulta text_button">
                 <button onclick="send_consulta('{% url 'marcatge:consultar_marcatge' %}')">Consultar</button>
             </td>
-			<td class="entrada">
+			<td class="entrada text_button">
                 <button onclick="send_entrada('{% url 'marcatge:marcar_entrada' %}')">Entrada</button>
             </td>
-			<td class="sortida">
+			<td class="sortida text_button">
                 <button onclick="send_sortida('{% url 'marcatge:marcar_sortida' %}')">Sortida</button>
             </td>
 		</tr>
