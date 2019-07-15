@@ -1,0 +1,5 @@
+*.pyc
+.idea/
+venv_afitxar
+.gitignore
+*.sqlite3
