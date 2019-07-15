@@ -55,7 +55,7 @@ class Treballador(models.Model):
         total_spent = timedelta(seconds=0)
         for marcat_avui in marcats_avui:
             total_spent += marcat_avui.get_time_spent()
-        msg = _("Total marcat avui: <b>{0}</b>.\n").format(str(total_spent).split(".")[0]) + msg
+        msg = _("Total marcat avui: {0}.\n").format(str(total_spent).split(".")[0]) + msg
         return msg
 
 
