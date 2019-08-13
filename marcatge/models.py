@@ -1,9 +1,18 @@
 from django.db import models
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import timedelta, time, datetime
 from django.core.validators import MinLengthValidator
 from .validators import validate_numeric_char
 from django.utils.translation import gettext as _
+import tempfile
+import csv
+
+
+
+def format_result_as_hours(totsec):
+    h = str(totsec // 3600).split(".")[0]
+    m = str((totsec % 3600) // 60).split(".")[0]
+    return h.zfill(2) + ":" + m.zfill(2)
 
 
 def get_client_ip(request):
@@ -28,6 +37,17 @@ class Treballador(models.Model):
 
     def __str__(self):
         return self.nom
+
+    def get_time_spent_on_date(self, data):
+        trobats = Marcatge.objects.filter(
+            entrada__range=(datetime.combine(data, time.min), datetime.combine(data, time.max)),
+            sortida__isnull=False,
+            treballador=self
+        )
+        acumulat = 0
+        for trobat in trobats:
+            acumulat += trobat.get_time_spent().total_seconds()
+        return acumulat
 
     @staticmethod
     def get_treballador_from_codi(codi):
@@ -57,6 +77,30 @@ class Treballador(models.Model):
             total_spent += marcat_avui.get_time_spent()
         msg = _("Total marcat avui: {0}.\n").format(str(total_spent).split(".")[0]) + msg
         return msg
+
+    @staticmethod
+    def generar_resum(treballadors, data_desde, data_fins):
+        if not isinstance(data_desde, datetime):
+            data_desde = datetime.strptime(data_desde, "%Y-%m-%d")
+        if not isinstance(data_fins, datetime):
+            data_fins = datetime.strptime(data_fins, "%Y-%m-%d")
+
+        fname = 'resum_hores_{0}_{1}'.format(data_desde.strftime("%Y-%m-%d"), data_fins.strftime("%Y-%m-%d"))
+        tf = tempfile.NamedTemporaryFile('w+t', prefix=fname, suffix=".csv")
+        tfwriter = csv.writer(tf, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+        tfwriter.writerow(["Dia"]+[t.nom for t in treballadors])
+
+        delta = data_fins - data_desde
+        for i in range(delta.days + 1):
+            gastats = []
+            day = data_desde + timedelta(days=i)
+            for y in range(len(treballadors)):
+                gastat = format_result_as_hours(treballadors[y].get_time_spent_on_date(day))
+                gastats.append(gastat)
+            tfwriter.writerow([day.strftime("%d-%m-%Y")]+gastats)
+        tf.seek(0)
+        return tf
 
 
 class Marcatge(models.Model):
