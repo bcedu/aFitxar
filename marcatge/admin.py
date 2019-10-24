@@ -3,12 +3,20 @@ from django.shortcuts import render, HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from django.http import FileResponse
 from .models import Marcatge
-admin.site.register(Marcatge)
+
+
+class MarcatgeAdmin(admin.ModelAdmin):
+    list_display = ['treballador', 'entrada_', 'sortida_']
+    ordering = ['treballador', 'entrada', 'sortida']
+    list_filter = ['treballador', 'entrada', 'sortida']
+
+admin.site.register(Marcatge, MarcatgeAdmin)
 
 
 class TreballadorAdmin(admin.ModelAdmin):
     list_display = ['nom', 'vat', 'codi_entrada']
     ordering = ['nom']
+    list_filter = ['nom']
     actions = ["generar_resum"]
 
     def generar_resum(self, request, queryset):

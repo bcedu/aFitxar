@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.utils.html import format_html
 from datetime import timedelta, time, datetime
 from django.core.validators import MinLengthValidator
 from .validators import validate_numeric_char
@@ -105,18 +106,21 @@ class Treballador(models.Model):
 
 class Marcatge(models.Model):
     entrada = models.DateTimeField()
+    entrada_ = models.DateTimeField()
     entrada_ip = models.CharField(max_length=16, null=True, blank=True)
     sortida = models.DateTimeField(null=True, blank=True)
+    sortida_ = models.DateTimeField()
     sortida_ip = models.CharField(null=True, blank=True, max_length=16)
     treballador = models.ForeignKey(Treballador, on_delete=models.CASCADE)
 
-    def __str__(self):
-        name = self.treballador.nom + "  "
-        if self.entrada:
-            name += self.entrada.strftime("%d/%m/%Y %H:%M") + " - "
-        if self.sortida:
-            name += self.sortida.strftime("%d/%m/%Y %H:%M")
-        return name
+    def entrada_(self):
+        return format_html('<b>{0}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{1}', self.entrada.strftime("%d/%m/%Y"), self.entrada.strftime("%H:%M"))
+
+    def sortida_(self):
+        return format_html('{0}', self.sortida.strftime("%H:%M"))
+
+    entrada_.allow_tags = True
+    sortida_.allow_tags = True
 
     def get_time_spent(self):
         if not self.entrada:
