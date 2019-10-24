@@ -8,7 +8,7 @@ from .models import Marcatge
 class MarcatgeAdmin(admin.ModelAdmin):
     list_display = ['treballador', 'entrada_', 'sortida_']
     ordering = ['treballador', 'entrada', 'sortida']
-    list_filter = ['treballador', 'entrada', 'sortida']
+    list_filter = ['entrada', 'sortida', 'treballador']
 
 admin.site.register(Marcatge, MarcatgeAdmin)
 
