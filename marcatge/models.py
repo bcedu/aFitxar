@@ -127,7 +127,7 @@ class Marcatge(models.Model):
         return sortida - self.entrada
 
     @staticmethod
-    def fes_entrada(treballador, ip):
+    def fes_entrada(treballador, ip=None):
         en_marxa = Marcatge.objects.filter(sortida__isnull=True, treballador=treballador)
         if en_marxa:
             return False, _(u"No pots fer una entrada si ja en tens una en marxa. Has de marcar una sortia.")
@@ -136,7 +136,7 @@ class Marcatge(models.Model):
         return True, _(u"Entrada realitzada amb èxit")
 
     @staticmethod
-    def fes_sortida(treballador, ip):
+    def fes_sortida(treballador, ip=None):
         en_marxa = Marcatge.objects.filter(sortida__isnull=True, treballador=treballador)
         if not en_marxa:
             return False, _(u"No pots fer una sortida si no tens cap marcatge en marxa. Has de marcar una entrada.")
