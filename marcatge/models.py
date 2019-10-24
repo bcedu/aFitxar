@@ -7,7 +7,7 @@ from .validators import validate_numeric_char
 from django.utils.translation import gettext as _
 import tempfile
 import csv
-
+from django import forms
 
 
 def format_result_as_hours(totsec):
@@ -35,6 +35,12 @@ class Treballador(models.Model):
             MinLengthValidator(4)
         ]
     )
+
+    def obrir_marcatges(self):
+        return format_html('<a class="button" href="/admin/marcatge/marcatge/?treballador__id__exact={}">Marcatges</a>', self.pk)
+
+    obrir_marcatges.short_description = 'Obrir Marcatges'
+    obrir_marcatges.allow_tags = True
 
     def __str__(self):
         return self.nom
@@ -146,3 +152,4 @@ class Marcatge(models.Model):
             return False, _(u"No pots fer una sortida si no tens cap marcatge en marxa. Has de marcar una entrada.")
         en_marxa.update(sortida=timezone.now(), sortida_ip=ip)
         return True, _(u"Sortida realitzada amb èxit.")
+

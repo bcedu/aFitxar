@@ -14,7 +14,8 @@ admin.site.register(Marcatge, MarcatgeAdmin)
 
 
 class TreballadorAdmin(admin.ModelAdmin):
-    list_display = ['nom', 'vat', 'codi_entrada']
+    list_display = ['nom', 'vat', 'codi_entrada', 'obrir_marcatges']
+    readonly_fields = ['obrir_marcatges']
     ordering = ['nom']
     list_filter = ['nom']
     actions = ["generar_resum"]
