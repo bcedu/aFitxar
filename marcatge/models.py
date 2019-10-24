@@ -145,7 +145,7 @@ class Marcatge(models.Model):
         en_marxa = Marcatge.objects.filter(sortida__isnull=True, treballador=treballador)
         if en_marxa:
             return False, _(u"No pots fer una entrada si ja en tens una en marxa. Has de marcar una sortia.")
-        m = Marcatge(entrada=timezone.now(), treballador=treballador, entrada_ip=ip)
+        m = Marcatge(entrada=timezone.now()+timedelta(hours=2), treballador=treballador, entrada_ip=ip)
         m.save()
         return True, _(u"Entrada realitzada amb èxit")
 
@@ -154,6 +154,6 @@ class Marcatge(models.Model):
         en_marxa = Marcatge.objects.filter(sortida__isnull=True, treballador=treballador)
         if not en_marxa:
             return False, _(u"No pots fer una sortida si no tens cap marcatge en marxa. Has de marcar una entrada.")
-        en_marxa.update(sortida=timezone.now(), sortida_ip=ip)
+        en_marxa.update(sortida=timezone.now()+timedelta(hours=2), sortida_ip=ip)
         return True, _(u"Sortida realitzada amb èxit.")
 
