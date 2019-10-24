@@ -120,9 +120,13 @@ class Marcatge(models.Model):
     treballador = models.ForeignKey(Treballador, on_delete=models.CASCADE)
 
     def entrada_(self):
+        if not self.entrada:
+            return format_html("-")
         return format_html('<b>{0}</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{1}', self.entrada.strftime("%d/%m/%Y"), self.entrada.strftime("%H:%M"))
 
     def sortida_(self):
+        if not self.sortida:
+            return format_html("-")
         return format_html('{0}', self.sortida.strftime("%H:%M"))
 
     entrada_.allow_tags = True
