@@ -70,3 +70,11 @@ def consultar_marcatge(request):
         'success_message': message,
         'error_message': None,
     })
+
+
+def setup_subtotals(request):
+    for marcatge in Marcatge.objects.all():
+        marcatge.subtotal = marcatge.get_subtotal()
+        marcatge.subtotal_dia = marcatge.get_subtotal_dia()
+        marcatge.save()
+    return HttpResponse(status=204)
