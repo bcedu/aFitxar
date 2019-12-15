@@ -117,6 +117,8 @@ class Marcatge(models.Model):
     sortida = models.DateTimeField(null=True, blank=True)
     sortida_ = models.DateTimeField()
     sortida_ip = models.CharField(null=True, blank=True, max_length=16)
+    subtotal = models.DurationField(null=True)
+    subtotal_dia = models.DurationField(null=True)
     treballador = models.ForeignKey(Treballador, on_delete=models.CASCADE)
 
     def entrada_(self):
@@ -132,6 +134,25 @@ class Marcatge(models.Model):
     entrada_.allow_tags = True
     sortida_.allow_tags = True
 
+    def get_subtotal(self):
+        spent = self.get_time_spent()
+        return spent - timedelta(microseconds=spent.microseconds)
+
+    def get_subtotal_dia(self):
+        trobats = Marcatge.objects.filter(
+            entrada__range=(datetime.combine(self.entrada, time.min), datetime.combine(self.entrada, time.max)),
+            sortida__isnull=False,
+            treballador=self.treballador
+        )
+        spent = timedelta(seconds=0)
+        for trobat in trobats:
+            if trobat.id == self.id:
+                aux_spent = self.get_time_spent()
+            else:
+                aux_spent = trobat.get_time_spent()
+            spent += aux_spent
+        return spent - timedelta(microseconds=spent.microseconds)
+
     def get_time_spent(self):
         if not self.entrada:
             return timedelta(seconds=0)
@@ -139,6 +160,13 @@ class Marcatge(models.Model):
         if not sortida:
             sortida = timezone.now()
         return sortida - self.entrada
+
+    def save(self, *args, **kwargs):
+        update_subtotals = (getattr(self, '_sortida_changed', True) or getattr(self, '_entrada_changed', True)) and self.sortida
+        if update_subtotals:
+            self.subtotal = self.get_subtotal()
+            self.subtotal_dia = self.get_subtotal_dia()
+        super(Marcatge, self).save(*args, **kwargs)
 
     @staticmethod
     def fes_entrada(treballador, ip=None):
@@ -154,6 +182,11 @@ class Marcatge(models.Model):
         en_marxa = Marcatge.objects.filter(sortida__isnull=True, treballador=treballador)
         if not en_marxa:
             return False, _(u"No pots fer una sortida si no tens cap marcatge en marxa. Has de marcar una entrada.")
-        en_marxa.update(sortida=timezone.now()+timedelta(hours=2), sortida_ip=ip)
+        for marcatge in en_marxa:
+            marcatge.sortida = timezone.now()+timedelta(hours=2)
+            marcatge.sortida_ip = ip
+            marcatge.save()
+            marcatge.subtotal = marcatge.get_subtotal()
+            marcatge.subtotal_dia = marcatge.get_subtotal_dia()
+            marcatge.save()
         return True, _(u"Sortida realitzada amb èxit.")
-
