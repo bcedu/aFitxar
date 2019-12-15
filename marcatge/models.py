@@ -166,7 +166,20 @@ class Marcatge(models.Model):
         if update_subtotals:
             self.subtotal = self.get_subtotal()
             self.subtotal_dia = self.get_subtotal_dia()
+            self.update_all_subtotals(self.subtotal_dia)
         super(Marcatge, self).save(*args, **kwargs)
+
+    def update_all_subtotals(self, subtotals):
+        marcatges = Marcatge.objects.filter(
+            entrada__range=(datetime.combine(self.entrada, time.min), datetime.combine(self.entrada, time.max)),
+            sortida__isnull=False,
+            treballador=self.treballador
+        )
+        for trobat in marcatges:
+            if trobat.id != self.id:
+                trobat.subtotal_dia = subtotals
+                trobat.save()
+        return True
 
     @staticmethod
     def fes_entrada(treballador, ip=None):
@@ -189,4 +202,5 @@ class Marcatge(models.Model):
             marcatge.subtotal = marcatge.get_subtotal()
             marcatge.subtotal_dia = marcatge.get_subtotal_dia()
             marcatge.save()
+            marcatge.update_all_subtotals(marcatge.subtotal_dia)
         return True, _(u"Sortida realitzada amb èxit.")
