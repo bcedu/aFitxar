@@ -162,11 +162,13 @@ class Marcatge(models.Model):
         return sortida - self.entrada
 
     def save(self, *args, **kwargs):
-        update_subtotals = (getattr(self, '_sortida_changed', True) or getattr(self, '_entrada_changed', True)) and self.sortida
+        update_subtotals = (getattr(self, '_sortida_changed', True) or getattr(self, '_entrada_changed', True)) and self.sortida and not kwargs.get("update_done")
         if update_subtotals:
             self.subtotal = self.get_subtotal()
             self.subtotal_dia = self.get_subtotal_dia()
             self.update_all_subtotals(self.subtotal_dia)
+        if "update_done" in kwargs:
+            del kwargs['update_done']
         super(Marcatge, self).save(*args, **kwargs)
 
     def update_all_subtotals(self, subtotals):
@@ -178,7 +180,7 @@ class Marcatge(models.Model):
         for trobat in marcatges:
             if trobat.id != self.id:
                 trobat.subtotal_dia = subtotals
-                trobat.save()
+                trobat.save(update_done=True)
         return True
 
     @staticmethod
