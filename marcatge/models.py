@@ -99,13 +99,20 @@ class Treballador(models.Model):
         tfwriter.writerow(["Dia"]+[t.nom for t in treballadors])
 
         delta = data_fins - data_desde
+        treballadors_sum = {}
         for i in range(delta.days + 1):
             gastats = []
             day = data_desde + timedelta(days=i)
             for y in range(len(treballadors)):
-                gastat = format_result_as_hours(treballadors[y].get_time_spent_on_date(day))
+                if y not in treballadors_sum:
+                    treballadors_sum[y] = 0
+                aux = treballadors[y].get_time_spent_on_date(day)
+                treballadors_sum[y] += aux
+                gastat = format_result_as_hours(aux)
                 gastats.append(gastat)
             tfwriter.writerow([day.strftime("%d-%m-%Y")]+gastats)
+        total_trebalaldors = [format_result_as_hours(treballadors_sum[i] for i in treballadors_sum)]
+        tfwriter.writerow(["Total mes: "] + total_trebalaldors)
         tf.seek(0)
         return tf
 
