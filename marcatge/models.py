@@ -111,7 +111,7 @@ class Treballador(models.Model):
                 gastat = format_result_as_hours(aux)
                 gastats.append(gastat)
             tfwriter.writerow([day.strftime("%d-%m-%Y")]+gastats)
-        total_trebalaldors = [format_result_as_hours(treballadors_sum[i] for i in treballadors_sum)]
+        total_trebalaldors = [format_result_as_hours(treballadors_sum[i]) for i in treballadors_sum]
         tfwriter.writerow(["Total mes: "] + total_trebalaldors)
         tf.seek(0)
         return tf
