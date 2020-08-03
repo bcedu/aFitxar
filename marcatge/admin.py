@@ -6,10 +6,10 @@ from .models import Marcatge
 
 
 class MarcatgeAdmin(admin.ModelAdmin):
-    list_display = ['treballador', 'entrada_', 'sortida_', 'subtotal', 'subtotal_dia']
+    list_display = ['treballador', 'entrada_', 'sortida_', 'subtotal', 'subtotal_dia', 'duplicar']
     ordering = ['treballador', '-entrada', 'sortida']
     list_filter = ['entrada', 'sortida', 'treballador']
-    readonly_fields = ['subtotal', 'subtotal_dia']
+    readonly_fields = ['subtotal', 'subtotal_dia', 'duplicar']
 
 admin.site.register(Marcatge, MarcatgeAdmin)
 
