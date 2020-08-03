@@ -153,6 +153,7 @@ class Marcatge(models.Model):
             treballador=self.treballador,
         )
         the_copy.save()
+        the_copy.update_all_subtotals(the_copy.subtotal_dia)
         return format_html('<a class="button" href="/admin/marcatge/marcatge/{}">Duplicar</a>', the_copy.pk)
 
     duplicar.short_description = 'Duplicar'
