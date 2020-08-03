@@ -142,10 +142,18 @@ class Marcatge(models.Model):
     sortida_.allow_tags = True
 
     def duplicar(self):
-        obj = Marcatge.objects.get(pk=self.pk)
-        obj.pk = None
-        obj.save()
-        return format_html('<a class="button" href="/admin/marcatge/marcatge/{}">Duplicar</a>', self.pk)
+        the_copy = Marcatge(
+            entrada=self.entrada,
+            entrada_=self.entrada_,
+            entrada_ip=self.entrada_ip,
+            sortida=self.sortida,
+            sortida_=self.sortida_,
+            sortida_ip=self.sortida_ip,
+            subtotal_dia=self.subtotal_dia,
+            treballador=self.treballador,
+        )
+        the_copy.save()
+        return format_html('<a class="button" href="/admin/marcatge/marcatge/{}">Duplicar</a>', the_copy.pk)
 
     duplicar.short_description = 'Duplicar'
     duplicar.allow_tags = True
