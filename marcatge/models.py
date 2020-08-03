@@ -141,24 +141,6 @@ class Marcatge(models.Model):
     entrada_.allow_tags = True
     sortida_.allow_tags = True
 
-    def duplicar(self):
-        the_copy = Marcatge(
-            entrada=self.entrada,
-            entrada_=self.entrada_,
-            entrada_ip=self.entrada_ip,
-            sortida=self.sortida,
-            sortida_=self.sortida_,
-            sortida_ip=self.sortida_ip,
-            subtotal_dia=self.subtotal_dia,
-            treballador=self.treballador,
-        )
-        the_copy.save()
-        the_copy.update_all_subtotals(the_copy.subtotal_dia)
-        return format_html('<a class="button" href="/admin/marcatge/marcatge/{}">Duplicar</a>', the_copy.pk)
-
-    duplicar.short_description = 'Duplicar'
-    duplicar.allow_tags = True
-
     def get_subtotal(self):
         spent = self.get_time_spent()
         return spent - timedelta(microseconds=spent.microseconds)

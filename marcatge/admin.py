@@ -3,18 +3,19 @@ from django.shortcuts import render, HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from django.http import FileResponse
 from .models import Marcatge
+from modelclone import ClonableModelAdmin
 
 
-class MarcatgeAdmin(admin.ModelAdmin):
+class MarcatgeAdmin(ClonableModelAdmin):
     list_display = ['treballador', 'entrada_', 'sortida_', 'subtotal', 'subtotal_dia']
     ordering = ['treballador', '-entrada', 'sortida']
     list_filter = ['entrada', 'sortida', 'treballador']
-    readonly_fields = ['subtotal', 'subtotal_dia', 'duplicar']
+    readonly_fields = ['subtotal', 'subtotal_dia']
 
 admin.site.register(Marcatge, MarcatgeAdmin)
 
 
-class TreballadorAdmin(admin.ModelAdmin):
+class TreballadorAdmin(ClonableModelAdmin):
     list_display = ['nom', 'vat', 'codi_entrada', 'obrir_marcatges']
     readonly_fields = ['obrir_marcatges']
     ordering = ['nom']
