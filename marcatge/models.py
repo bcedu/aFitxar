@@ -141,6 +141,15 @@ class Marcatge(models.Model):
     entrada_.allow_tags = True
     sortida_.allow_tags = True
 
+    def duplicar(self):
+        obj = self
+        obj.pk = None
+        obj.save()
+        return format_html('<a class="button" href="/admin/marcatge/marcatge/{}">Duplicar</a>', self.pk)
+
+    duplicar.short_description = 'Duplicar'
+    duplicar.allow_tags = True
+
     def get_subtotal(self):
         spent = self.get_time_spent()
         return spent - timedelta(microseconds=spent.microseconds)
