@@ -142,7 +142,7 @@ class Marcatge(models.Model):
     sortida_.allow_tags = True
 
     def duplicar(self):
-        obj = self
+        obj = Marcatge.objects.get(pk=self.pk)
         obj.pk = None
         obj.save()
         return format_html('<a class="button" href="/admin/marcatge/marcatge/{}">Duplicar</a>', self.pk)
