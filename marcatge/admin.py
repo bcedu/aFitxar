@@ -6,16 +6,17 @@ from .models import Marcatge
 from modelclone import ClonableModelAdmin
 
 
-class MarcatgeAdmin(ClonableModelAdmin):
+class MarcatgeAdmin(admin.ModelAdmin):
     list_display = ['treballador', 'entrada_', 'sortida_', 'subtotal', 'subtotal_dia']
     ordering = ['treballador', '-entrada', 'sortida']
     list_filter = ['entrada', 'sortida', 'treballador']
     readonly_fields = ['subtotal', 'subtotal_dia']
+    save_as = True
 
 admin.site.register(Marcatge, MarcatgeAdmin)
 
 
-class TreballadorAdmin(ClonableModelAdmin):
+class TreballadorAdmin(admin.ModelAdmin):
     list_display = ['nom', 'vat', 'codi_entrada', 'obrir_marcatges']
     readonly_fields = ['obrir_marcatges']
     ordering = ['nom']
