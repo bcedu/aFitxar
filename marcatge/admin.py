@@ -61,7 +61,8 @@ class TreballadorAdmin(admin.ModelAdmin):
     list_display = ('nom', 'vat', 'codi_entrada', 'jornada_diaria_view', 'hores_totals_avui_view', 'hores_restants_view', 'estat_marcatge_html', 'obrir_dies')
     readonly_fields = ['obrir_dies']
     search_fields = ('nom', 'vat', 'codi_entrada')
-    list_filter = ('nom', 'vat', 'codi_entrada', EstatMarcatgeListFilter)
+    list_filter = [EstatMarcatgeListFilter]
+    ordering = ['nom', 'vat']
 
     def jornada_diaria_view(self, obj):
         return obj.jornada_diaria_view
@@ -162,9 +163,9 @@ class DiaTreballAdmin(admin.ModelAdmin):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="marcatges_per_dia.csv"'
         writer = csv.writer(response)
-        writer.writerow(['Treballador', 'dia', 'hores_totals', 'marcatges_relacionats'])
+        writer.writerow(['Treballador', 'dia', 'hores_totals', 'hores_restants', 'marcatges_relacionats'])
         for dia_treball in queryset:
-            writer.writerow([dia_treball.treballador.nom, dia_treball.dia, dia_treball.hores_totals_view, dia_treball.marcatges_relacionats_txt])
+            writer.writerow([dia_treball.treballador.nom, dia_treball.dia, dia_treball.hores_totals_view, dia_treball.hores_restants_view, dia_treball.marcatges_relacionats_txt])
         return response
     exportar_com_csv.short_description = "Exportar com a CSV"
 
