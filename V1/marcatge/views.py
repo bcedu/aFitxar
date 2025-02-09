@@ -1,12 +1,9 @@
-from pyexpat.errors import messages
-
-from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views import generic
 from django.utils import timezone
-from .models import Treballador, Marcatge
+from .models import Treballador, Marcatge, get_client_ip
 
 
 def portal_marcatge(request):
@@ -22,7 +19,8 @@ def marcar_entrada(request):
             'success_message': None,
             'error_message': message,
         })
-    done, message = found.fes_entrada()
+    ip = get_client_ip(request)
+    done, message = Marcatge.fes_entrada(found, ip)
     if not done:
         return render(request, 'marcatge/index.html', {
             'success_message': None,
@@ -44,7 +42,8 @@ def marcar_sortida(request):
             'error_message': message,
         })
 
-    done, message = found.fes_sortida()
+    ip = get_client_ip(request)
+    done, message = Marcatge.fes_sortida(found, ip)
     if not done:
         return render(request, 'marcatge/index.html', {
             'success_message': None,
@@ -71,3 +70,11 @@ def consultar_marcatge(request):
         'success_message': message,
         'error_message': None,
     })
+
+
+def setup_subtotals(request):
+    for marcatge in Marcatge.objects.all():
+        marcatge.subtotal = marcatge.get_subtotal()
+        marcatge.subtotal_dia = marcatge.get_subtotal_dia()
+        marcatge.save()
+    return HttpResponse(status=204)

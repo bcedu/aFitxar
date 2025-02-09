@@ -1,0 +1,1 @@
+from aFitxar.marcatge.models import Marcatge
