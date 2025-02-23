@@ -11,6 +11,8 @@ from django.dispatch import receiver
 import tempfile
 import csv
 from decimal import Decimal
+from tqdm import tqdm
+from workalendar.europe import Spain
 
 
 def format_as_hours(hores_decimals):
@@ -38,6 +40,7 @@ class Treballador(models.Model):
             MaxValueValidator(24)
         ]
     )
+    ajustar_jornada_diaria = models.BooleanField(null=True, blank=True, default=True)
 
     @property
     def jornada_diaria_view(self):
@@ -172,17 +175,18 @@ class Treballador(models.Model):
         return msg
 
     def ajustar_hores(self, data=timezone.now()):
-        dia_de_treball, created = DiaTreball.objects.get_or_create(
-            treballador=self, dia=data
-        )
-        dia_de_treball.ajustar_hores()
+        if self.ajustar_jornada_diaria:
+            dia_de_treball, created = DiaTreball.objects.get_or_create(
+                treballador=self, dia=data
+            )
+            dia_de_treball.ajustar_hores()
         return True
 
     @staticmethod
     def cron_ajustar_hores():
         from django.db import transaction
         treballadors = Treballador.objects.all()  # Busca tots els treballadors
-        for treballador in treballadors:
+        for treballador in tqdm(treballadors):
             try:
                 with transaction.atomic():  # Manté cada operació independent
                     treballador.ajustar_hores()
@@ -244,18 +248,21 @@ class DiaTreball(models.Model):
         self.hores_restants = self.treballador.jornada_diaria - Decimal(self.hores_totals)
         self.save()
 
-    def ajustar_hores(self):
+    def ajustar_hores(self, marge=0.15):
         if not self.hores_ajustades:
             self.ajustar_sortida_sense_entrada()
             self.actualitzar_hores_totals()
             self.save()
-            if abs(float(self.hores_restants)) < 0.05:
+            if abs(float(self.hores_restants)) <= marge:
                 return True
-            if self.hores_restants >= 0:
-                self.ajustar_hores_restants()
-            else:
-                self.ajustar_hores_sobrants()
-            self.actualitzar_hores_totals()
+            # nomes ajustem hores si no es un dia festiu
+            calendari = Spain()
+            if calendari.is_working_day(self.data):
+                if self.hores_restants >= 0:
+                    self.ajustar_hores_restants()
+                else:
+                    self.ajustar_hores_sobrants()
+                self.actualitzar_hores_totals()
         return True
 
     def ajustar_sortida_sense_entrada(self):

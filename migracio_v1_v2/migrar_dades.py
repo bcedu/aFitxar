@@ -21,9 +21,9 @@ def migrar_treballadors():
     # Inserció de treballadors a V2 amb jornada_diaria per defecte (8.0 hores)
     for treballador in treballadors:
         cursor_v2.execute("""
-            INSERT INTO marcatge_treballador (id, nom, vat, codi_entrada, jornada_diaria)
+            INSERT INTO marcatge_treballador (id, nom, vat, codi_entrada, jornada_diaria, ajustar_jornada_diaria)
             VALUES (?, ?, ?, ?, ?)
-        """, (treballador[0], treballador[1], treballador[2], treballador[3], 8.0))
+        """, (treballador[0], treballador[1], treballador[2], treballador[3], 0.0, True))
 
     conn_v2.commit()
     print("Migració de treballadors completada.")
@@ -93,9 +93,8 @@ sys.path.append('.')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'PortalMarcatge.settings')
 django.setup()
 from marcatge.models import Treballador
-for t in Treballador.objects.filter():
-    t.jornada_diaria = 0
-    t.save()
+from tqdm import tqdm
+for t in tqdm(Treballador.objects.filter()):
     t.jornada_diaria = 6
     t.save()
 
