@@ -129,8 +129,9 @@ class MarcatgeAdmin(admin.ModelAdmin):
 class DiaTreballAdmin(admin.ModelAdmin):
     list_display = ('treballador', 'dia', 'jornada_diaria_view', 'hores_totals_view', 'hores_restants_view', 'marcatge_en_marxa_html', 'marcatges_relacionats')
     search_fields = ('treballador', 'dia')
-    list_filter = ('treballador', 'dia')
-    ordering = ['-dia', 'treballador']
+    list_filter = ('treballador', 'dia', 'hores_restants_view')
+    ordering = ['-dia', 'treballador', 'hores_restants_view']
+    exclude = ('marcatges_relacionats_txt_backup',)
     inlines = [MarcatgeInline]
 
     def marcatges_relacionats(self, obj):
