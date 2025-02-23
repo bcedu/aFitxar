@@ -190,13 +190,15 @@ class Treballador(models.Model):
         return True
 
     @staticmethod
-    def cron_ajustar_hores():
+    def cron_ajustar_hores(dia=timezone.now()):
+        if isinstance(dia, str):
+            dia = datetime.strptime("%Y-%m-%d")
         from django.db import transaction
         treballadors = Treballador.objects.all()  # Busca tots els treballadors
         for treballador in tqdm(treballadors):
             try:
                 with transaction.atomic():  # Manté cada operació independent
-                    treballador.ajustar_hores()
+                    treballador.ajustar_hores(dia)
             except Exception as e:
                 print(f"Error ajustant hores per {treballador.nom}: {e}")
 
