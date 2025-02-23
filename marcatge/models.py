@@ -176,10 +176,17 @@ class Treballador(models.Model):
 
     def ajustar_hores(self, data=timezone.now()):
         if self.ajustar_jornada_diaria:
-            dia_de_treball, created = DiaTreball.objects.get_or_create(
-                treballador=self, dia=data
-            )
-            dia_de_treball.ajustar_hores()
+            calendari = Spain()
+            if calendari.is_working_day(data):
+                dia_de_treball, created = DiaTreball.objects.get_or_create(
+                    treballador=self, dia=data
+                )
+            else:
+                dia_de_treball = DiaTreball.objects.get(
+                    treballador=self, dia=data
+                )
+            if dia_de_treball:
+                dia_de_treball.ajustar_hores()
         return True
 
     @staticmethod
