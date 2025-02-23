@@ -259,7 +259,7 @@ class DiaTreball(models.Model):
 
     def ajustar_hores(self, marge=0.15):
         if not self.hores_ajustades:
-            self.ajustar_sortida_sense_entrada()
+            self.ajustar_marcatges_erronis()
             self.actualitzar_hores_totals()
             self.save()
             if abs(float(self.hores_restants)) <= marge:
@@ -274,11 +274,50 @@ class DiaTreball(models.Model):
                 self.actualitzar_hores_totals()
         return True
 
-    def ajustar_sortida_sense_entrada(self):
+    def ajustar_marcatges_erronis(self):
+        # Cas 1: tenim una unica sortida sense cap entrada. Eliminem la sortida.
         if self.ultim_marcatge and self.ultim_marcatge.tipus == "sortida":
             entrades = Marcatge.objects.filter(treballador=self.treballador, data__date=self.dia, tipus="entrada")
             if not entrades:
                 self.ultim_marcatge.delete()
+
+        # Cas 2: Tenim una entrada i una sortida a la mateixa hora i minut.
+        ultim_marcatge = Marcatge.objects.filter(treballador=self.treballador, dia_treball=self).order_by('-data').first()
+        if ultim_marcatge:
+            ultim_marcatge_2 = Marcatge.objects.exclude(
+                id=ultim_marcatge.id
+            ).filter(
+                treballador=self.treballador, dia_treball=self
+            ).order_by('-data').first()
+            if ultim_marcatge_2 and ultim_marcatge_2.data.strftime("%Y-%m-%s %H:%M") == ultim_marcatge.data.strftime("%Y-%m-%s %H:%M"):
+                marcatges_posteriors = Marcatge.objects.exclude(
+                    id__in=[ultim_marcatge.id, ultim_marcatge_2.id]
+                ).filter(
+                    treballador=self.treballador, dia_treball=self, data__gte=ultim_marcatge.data
+                )
+                # 2.1: No tenim cap marcatge posterior.
+                if not marcatges_posteriors:
+                    marcatge_anterior = Marcatge.objects.exclude(
+                        id__in=[ultim_marcatge.id, ultim_marcatge_2.id]
+                    ).filter(
+                        treballador=self.treballador, dia_treball=self, data__lte=ultim_marcatge.data
+                    ).order_by('-data').first()
+                    eliminar_sortida = False
+                    eliminar_entrada = False
+                    # No hi ha marcatge anterior. Eliminem la sortida incorrecte.
+                    if not marcatge_anterior:
+                        eliminar_sortida = True
+                    # El marcatge anterior es una entrada. Eliminem la entrada incorrecte.
+                    elif marcatge_anterior.tipus == "entrada":
+                        eliminar_entrada = True
+                    # El marcatge anterior es una sortida. Eliminem la entrada i la sortida incorrectes.
+                    else:  # marcatge_anterior.tipus == "sortida"
+                        eliminar_entrada = eliminar_sortida = True
+                    for a_eliminar in [ultim_marcatge, ultim_marcatge_2]:
+                        if (a_eliminar.tipus == "entrada" and eliminar_entrada) or (a_eliminar.tipus == "sortida" and eliminar_sortida):
+                            a_eliminar.delete()
+
+        # Cas 3: El primer marcarge es una sortida. L'eliminem
         primer_marcatge = Marcatge.objects.filter(treballador=self.treballador, dia_treball=self).order_by('-data').last()
         if primer_marcatge and primer_marcatge.tipus == "sortida":
             primer_marcatge.delete()
