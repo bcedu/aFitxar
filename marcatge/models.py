@@ -195,7 +195,7 @@ class DiaTreball(models.Model):
     dia = models.DateField()
     hores_totals = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     hores_restants = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    hores_ajustades = models.BooleanField(default=False)
+    hores_ajustades = models.BooleanField(default=False, null=True, blank=True)
 
     @property
     def hores_totals_view(self):
