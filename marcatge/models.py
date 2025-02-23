@@ -257,7 +257,7 @@ class DiaTreball(models.Model):
                 return True
             # nomes ajustem hores si no es un dia festiu
             calendari = Spain()
-            if calendari.is_working_day(self.data):
+            if calendari.is_working_day(self.dia):
                 if self.hores_restants >= 0:
                     self.ajustar_hores_restants()
                 else:
