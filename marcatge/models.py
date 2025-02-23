@@ -209,6 +209,7 @@ class DiaTreball(models.Model):
     hores_totals = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     hores_restants = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     hores_ajustades = models.BooleanField(default=False, null=True, blank=True)
+    marcatges_relacionats_txt_backup = models.CharField(null=True, max_length=256)
 
     @property
     def hores_totals_view(self):
@@ -259,6 +260,8 @@ class DiaTreball(models.Model):
 
     def ajustar_hores(self, marge=0.15):
         if not self.hores_ajustades:
+            self.marcatges_relacionats_txt_backup = self.marcatges_relacionats_txt
+            self.save()
             self.ajustar_marcatges_erronis()
             self.actualitzar_hores_totals()
             self.save()
