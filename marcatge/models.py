@@ -375,15 +375,16 @@ class DiaTreball(models.Model):
             raise Exception("No es pot ajustar les hores.")
         if self.ultim_marcatge.tipus ==     "entrada":
             raise Exception("No es pot ajustar les hores.")
+        ultim_marcatge = self.ultim_marcatge
         num = choice([i for i in range(-5, 6)]) / 100.0
-        nova_sortida = self.ultim_marcatge.data + timedelta(hours=float(self.hores_restants) + num)
+        nova_sortida = ultim_marcatge.data + timedelta(hours=float(self.hores_restants) + num)
         ultima_entrada = Marcatge.objects.filter(treballador=self.treballador, dia_treball=self, tipus="entrada").order_by('data').last()
         if not ultima_entrada:
             raise Exception("No es pot ajustar les hores.")
         if nova_sortida < ultima_entrada.data:
             raise Exception("No es pot ajustar les hores.")
-        self.ultim_marcatge.data = nova_sortida
-        self.ultim_marcatge.save()
+        ultim_marcatge.data = nova_sortida
+        ultim_marcatge.save()
         return True
 
 
