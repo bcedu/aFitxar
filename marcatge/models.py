@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from random import randrange, choice
 
 from django.db import models
 from django.utils import timezone
@@ -31,7 +32,7 @@ class Treballador(models.Model):
     )
     jornada_diaria = models.DecimalField(
         help_text="Hores de la jornada laboral de 1 dia. Atenció: '1.5' son '1h 30m'.",
-        default=8, max_digits=5, decimal_places=2,
+        default=6, max_digits=5, decimal_places=2,
         validators=[
             MinValueValidator(0),
             MaxValueValidator(24)
@@ -141,21 +142,19 @@ class Treballador(models.Model):
         else:
             return treballador_id[0], "Treballador amb codi {0} trobat correctament".format(codi)
 
-    def fes_entrada(self, ip=None):
-        data = timezone.now()
+    def fes_entrada(self, ip=None, data=timezone.now()):
         en_marxa = self.te_marcatge_actiu(data)
         if en_marxa:
             return False, u"No pots fer una entrada si ja en tens una en marxa. Has de marcar una sortia."
-        m = Marcatge(tipus="entrada", data=timezone.now(), treballador=self)
+        m = Marcatge(tipus="entrada", data=data, treballador=self)
         m.save()
         return True, u"Entrada realitzada amb èxit"
 
-    def fes_sortida(self, ip=None):
-        data = timezone.now()
+    def fes_sortida(self, ip=None, data=timezone.now()):
         en_marxa = self.te_marcatge_actiu(data)
         if not en_marxa:
             return False, u"No pots fer una sortida si no tens cap marcatge en marxa. Has de marcar una entrada."
-        m = Marcatge(tipus="sortida", data=timezone.now(), treballador=self)
+        m = Marcatge(tipus="sortida", data=data, treballador=self)
         m.save()
         return True, u"Sortida realitzada amb èxit."
 
@@ -172,12 +171,31 @@ class Treballador(models.Model):
         msg = "Total marcat avui: {0}.\n".format(self.hores_totals_avui_view) + msg
         return msg
 
+    def ajustar_hores(self, data=timezone.now()):
+        dia_de_treball, created = DiaTreball.objects.get_or_create(
+            treballador=self, dia=data
+        )
+        dia_de_treball.ajustar_hores()
+        return True
+
+    @staticmethod
+    def cron_ajustar_hores():
+        from django.db import transaction
+        treballadors = Treballador.objects.all()  # Busca tots els treballadors
+        for treballador in treballadors:
+            try:
+                with transaction.atomic():  # Manté cada operació independent
+                    treballador.ajustar_hores()
+            except Exception as e:
+                print(f"Error ajustant hores per {treballador.nom}: {e}")
+
 
 class DiaTreball(models.Model):
     treballador = models.ForeignKey(Treballador, on_delete=models.CASCADE)
     dia = models.DateField()
     hores_totals = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     hores_restants = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    hores_ajustades = models.BooleanField(default=False)
 
     @property
     def hores_totals_view(self):
@@ -225,6 +243,77 @@ class DiaTreball(models.Model):
         self.hores_totals = hores_total.total_seconds() / 3600
         self.hores_restants = self.treballador.jornada_diaria - Decimal(self.hores_totals)
         self.save()
+
+    def ajustar_hores(self):
+        if not self.hores_ajustades:
+            self.ajustar_sortida_sense_entrada()
+            self.actualitzar_hores_totals()
+            self.save()
+            if abs(float(self.hores_restants)) < 0.05:
+                return True
+            if self.hores_restants >= 0:
+                self.ajustar_hores_restants()
+            else:
+                self.ajustar_hores_sobrants()
+            self.actualitzar_hores_totals()
+        return True
+
+    def ajustar_sortida_sense_entrada(self):
+        if self.ultim_marcatge and self.ultim_marcatge.tipus == "sortida":
+            entrades = Marcatge.objects.filter(treballador=self.treballador, data__date=self.dia, tipus="entrada")
+            if not entrades:
+                self.ultim_marcatge.delete()
+        primer_marcatge = Marcatge.objects.filter(treballador=self.treballador, dia_treball=self).order_by('-data').last()
+        if primer_marcatge and primer_marcatge.tipus == "sortida":
+            primer_marcatge.delete()
+        return True
+
+    def ajustar_hores_restants(self):
+        if self.ultim_marcatge and self.ultim_marcatge.tipus == "entrada":
+            # Si tenim una entrada marcada la reaprofitem, no cal fer res de moment
+            start_date = self.ultim_marcatge.data
+        else:
+            if self.ultim_marcatge and self.ultim_marcatge.tipus == "sortida":
+                # Si ja haviem marcat algo avui, el nou marcatge el començarem uns 10 minuts despres
+                start_date = self.ultim_marcatge.data + timedelta(minutes=randrange(9))
+            else:
+                # Si no hem marcat res, començarem en algun moment de les 8 del mati
+                start_date = datetime.combine(self.dia, datetime.min.time())
+                start_date = start_date.replace(hour=8, minute=randrange(50), second=0)
+            # Marquem la entrada nova
+            self.treballador.fes_entrada(data=start_date)
+            start_date = self.ultim_marcatge.data
+
+        # Ara que ja tenim una entrada com a punt de partida,
+        # calculem la nova sortida per arrivar a les hores que toquen
+        num = choice([i for i in range(-5, 6)]) / 100.0
+        nova_sortida = start_date + timedelta(hours=float(self.hores_restants) + num)
+        if nova_sortida < start_date:
+            nova_sortida = start_date + timedelta(hours=float(self.hores_restants))
+        if nova_sortida.strftime("%Y-%m-%d") != self.ultim_marcatge.data.strftime("%Y-%m-%d"):
+            raise Exception("No es pot ajustar les hores.")
+        self.treballador.fes_sortida(data=nova_sortida)
+        self.hores_ajustades = True
+        self.save()
+        return True
+
+    def ajustar_hores_sobrants(self):
+        if self.ultim_marcatge and self.ultim_marcatge.tipus == "entrada":
+            # Si tenim una entrada marcada la reaprofitem, la eliminem
+            self.ultim_marcatge.delete()
+        if not self.ultim_marcatge:
+            raise Exception("No es pot ajustar les hores.")
+        if self.ultim_marcatge.tipus ==     "entrada":
+            raise Exception("No es pot ajustar les hores.")
+        num = choice([i for i in range(-5, 6)])
+        nova_sortida = self.ultim_marcatge.data + timedelta(hours=float(self.hores_restants) + num)
+        if nova_sortida < self.ultim_marcatge.data:
+            raise Exception("No es pot ajustar les hores.")
+        self.ultim_marcatge.data = nova_sortida
+        self.ultim_marcatge.save()
+        self.hores_ajustades = True
+        self.save()
+        return True
 
 
 class Marcatge(models.Model):
