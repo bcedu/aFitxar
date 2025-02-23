@@ -262,16 +262,17 @@ class DiaTreball(models.Model):
             self.ajustar_marcatges_erronis()
             self.actualitzar_hores_totals()
             self.save()
-            if abs(float(self.hores_restants)) <= marge:
-                return True
-            # nomes ajustem hores si no es un dia festiu
-            calendari = Spain()
-            if calendari.is_working_day(self.dia):
-                if self.hores_restants >= 0:
-                    self.ajustar_hores_restants()
-                else:
-                    self.ajustar_hores_sobrants()
-                self.actualitzar_hores_totals()
+            if abs(float(self.hores_restants)) > marge:
+                # nomes ajustem hores si no es un dia festiu
+                calendari = Spain()
+                if calendari.is_working_day(self.dia):
+                    if self.hores_restants >= 0:
+                        self.ajustar_hores_restants()
+                    else:
+                        self.ajustar_hores_sobrants()
+                    self.actualitzar_hores_totals()
+            self.hores_ajustades = True
+            self.save()
         return True
 
     def ajustar_marcatges_erronis(self):
@@ -319,8 +320,21 @@ class DiaTreball(models.Model):
 
         # Cas 3: El primer marcarge es una sortida. L'eliminem
         primer_marcatge = Marcatge.objects.filter(treballador=self.treballador, dia_treball=self).order_by('-data').last()
-        if primer_marcatge and primer_marcatge.tipus == "sortida":
-            primer_marcatge.delete()
+        if primer_marcatge:
+            if primer_marcatge.tipus == "entrada":
+                # Podem tindre una sortida a la mateixa hora i minut
+                primer_marcatge_2 = Marcatge.objects.exclude(
+                    id=primer_marcatge.id
+                ).filter(
+                    treballador=self.treballador, dia_treball=self
+                ).order_by('data').first()
+                if (
+                    primer_marcatge_2 and primer_marcatge_2.tipus == "sortida"
+                    and primer_marcatge_2.data.strftime("%Y-%m-%s %H:%M") == primer_marcatge.data.strftime("%Y-%m-%s %H:%M")
+                ):
+                    primer_marcatge = primer_marcatge_2
+            if primer_marcatge and primer_marcatge.tipus == "sortida":
+                primer_marcatge.delete()
         return True
 
     def ajustar_hores_restants(self):
@@ -348,8 +362,6 @@ class DiaTreball(models.Model):
         if nova_sortida.strftime("%Y-%m-%d") != self.ultim_marcatge.data.strftime("%Y-%m-%d"):
             raise Exception("No es pot ajustar les hores.")
         self.treballador.fes_sortida(data=nova_sortida)
-        self.hores_ajustades = True
-        self.save()
         return True
 
     def ajustar_hores_sobrants(self):
@@ -366,8 +378,6 @@ class DiaTreball(models.Model):
             raise Exception("No es pot ajustar les hores.")
         self.ultim_marcatge.data = nova_sortida
         self.ultim_marcatge.save()
-        self.hores_ajustades = True
-        self.save()
         return True
 
 
