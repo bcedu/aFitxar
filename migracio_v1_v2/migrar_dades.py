@@ -96,7 +96,7 @@ from marcatge.models import Treballador
 for t in Treballador.objects.filter():
     t.jornada_diaria = 0
     t.save()
-    t.jornada_diaria = 8
+    t.jornada_diaria = 6
     t.save()
 
 print("Migració completada amb èxit.")
