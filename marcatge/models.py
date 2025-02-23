@@ -192,7 +192,7 @@ class Treballador(models.Model):
     @staticmethod
     def cron_ajustar_hores(dia=timezone.now()):
         if isinstance(dia, str):
-            dia = datetime.strptime("%Y-%m-%d")
+            dia = datetime.strptime(dia, "%Y-%m-%d")
         from django.db import transaction
         treballadors = Treballador.objects.all()  # Busca tots els treballadors
         for treballador in tqdm(treballadors):
