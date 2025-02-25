@@ -125,7 +125,8 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "Benvingut al portal de marcatge",
     "primary_color": "#39aecf",  # Color principal
     "secondary_color": "orange",  # Color secundari
-    "navbar": "#0a4a87",  # Fons de la barra de navegació
+    "navbar": "#39aecf",  # Fons de la barra de navegació
+    "sidebar": "#39aecf",
     "body_small_text": False,
     "dark_mode_theme": False,
     # ICONES DEL MENÚ
