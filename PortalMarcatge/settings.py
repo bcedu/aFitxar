@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-&8hl$s^)mvurle)a#_)p6sh548%wguo%ur(s3axikl)d578aiq'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
@@ -31,6 +31,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -116,6 +117,27 @@ USE_L10N = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = '/home/bcedu/src/aFitxar/static/'
+
+JAZZMIN_SETTINGS = {
+    "site_title": "Portal de Marcatge BCClean",
+    "site_header": "Portal de Marcatge",
+    "site_brand": "Clean and Iron",
+    "welcome_sign": "Benvingut al portal de marcatge",
+    "primary_color": "#39aecf",  # Color principal
+    "secondary_color": "orange",  # Color secundari
+    "navbar": "#0a4a87",  # Fons de la barra de navegació
+    "body_small_text": False,
+    "dark_mode_theme": False,
+    # ICONES DEL MENÚ
+    "icons": {
+        "auth.User": "fas fa-user",
+        "auth.Group": "fas fa-users",
+    },
+    "site_logo": "images/logo.png",
+    "login_logo": "images/logo.png",
+    "login_logo_dark": "images/logo.png",
+    "site_icon": "images/favicon.ico",
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

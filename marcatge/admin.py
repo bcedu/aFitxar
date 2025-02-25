@@ -7,21 +7,6 @@ from django.http import FileResponse
 from django.utils.html import format_html
 from django.urls import reverse
 from django.contrib import admin
-from django.utils.html import format_html
-
-
-class CustomAdminSite(admin.AdminSite):
-
-    def get_app_list(self, request):
-        return super().get_app_list(request)
-
-    def each_context(self, request):
-        context = super().each_context(request)
-        context['custom_css'] = 'admin/custom.css'
-        return context
-
-
-admin.site = CustomAdminSite()
 
 
 class EstatMarcatgeListFilter(admin.SimpleListFilter):

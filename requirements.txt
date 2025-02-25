@@ -1,3 +1,4 @@
 Django
 workalendar
 tqdm
+django-jazzmin
