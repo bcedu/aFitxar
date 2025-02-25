@@ -22,7 +22,7 @@ def migrar_treballadors():
     for treballador in treballadors:
         cursor_v2.execute("""
             INSERT INTO marcatge_treballador (id, nom, vat, codi_entrada, jornada_diaria, ajustar_jornada_diaria)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (treballador[0], treballador[1], treballador[2], treballador[3], 0.0, True))
 
     conn_v2.commit()
