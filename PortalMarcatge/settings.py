@@ -115,7 +115,7 @@ USE_L10N = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = '/home/bcedu/src/aFitxarV2/static/'
+STATIC_ROOT = '/home/bcedu/src/aFitxar/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
