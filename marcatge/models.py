@@ -145,7 +145,9 @@ class Treballador(models.Model):
         else:
             return treballador_id[0], "Treballador amb codi {0} trobat correctament".format(codi)
 
-    def fes_entrada(self, ip=None, data=timezone.now()):
+    def fes_entrada(self, ip=None, data=None):
+        if not data:
+            data = timezone.now()
         en_marxa = self.te_marcatge_actiu(data)
         if en_marxa:
             return False, u"No pots fer una entrada si ja en tens una en marxa. Has de marcar una sortia."
@@ -153,7 +155,9 @@ class Treballador(models.Model):
         m.save()
         return True, u"Entrada realitzada amb èxit"
 
-    def fes_sortida(self, ip=None, data=timezone.now()):
+    def fes_sortida(self, ip=None, data=None):
+        if not data:
+            data = timezone.now()
         en_marxa = self.te_marcatge_actiu(data)
         if not en_marxa:
             return False, u"No pots fer una sortida si no tens cap marcatge en marxa. Has de marcar una entrada."
@@ -174,7 +178,9 @@ class Treballador(models.Model):
         msg = "Total marcat avui: {0}.\n".format(self.hores_totals_avui_view) + msg
         return msg
 
-    def ajustar_hores(self, data=timezone.now()):
+    def ajustar_hores(self, data=None):
+        if not data:
+            data = timezone.now()
         if self.ajustar_jornada_diaria:
             calendari = Spain()
             if calendari.is_working_day(data):
@@ -190,7 +196,9 @@ class Treballador(models.Model):
         return True
 
     @staticmethod
-    def cron_ajustar_hores(dia=timezone.now()):
+    def cron_ajustar_hores(dia=None):
+        if not dia:
+            dia = timezone.now()
         if isinstance(dia, str):
             dia = datetime.strptime(dia, "%Y-%m-%d")
         from django.db import transaction
