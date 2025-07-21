@@ -1,0 +1,35 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block content %}
+  <div class="content">
+    <h1>{{ title }}</h1>
+
+    <p>Introdueix el nombre d'hores que vols assignar als dies seleccionats.</p>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% for hidden in form.hidden_fields %}
+        {{ hidden }}
+      {% endfor %}
+
+      <fieldset class="module aligned">
+        <div class="form-row">
+          <label for="{{ form.hores.id_for_label }}" style="margin-right: 10px;">
+            {{ form.hores.label }}
+          </label>
+          <div class="field-box">
+            {{ form.hores }}
+            {{ form.hores.errors }}
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="submit-row">
+        <input type="submit" value="Assignar hores" class="default">
+        <a href="../" class="button" style="margin-left: 15px;">Cancel·la</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

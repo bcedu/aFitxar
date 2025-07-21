@@ -7,6 +7,18 @@ from django.http import FileResponse
 from django.utils.html import format_html
 from django.urls import reverse
 from django.contrib import admin
+from django import forms
+from django.contrib import admin, messages
+from django import forms
+from django.shortcuts import render, redirect
+from django.urls import path
+from .models import DiaTreball
+from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
+from ast import literal_eval
+
+class AssignarHoresMassiuForm(forms.Form):
+    _selected_action = forms.CharField(widget=forms.MultipleHiddenInput)
+    hores = forms.DecimalField(label="Hores a assignar", min_value=0)
 
 
 class EstatMarcatgeListFilter(admin.SimpleListFilter):
@@ -128,28 +140,49 @@ class MarcatgeAdmin(admin.ModelAdmin):
 
 
 class DiaTreballAdmin(admin.ModelAdmin):
+
+    class Media:
+        js = ('js/ocultar_nova_jornada.js',)
+
     list_display = ('treballador', 'dia', 'jornada_diaria_view', 'hores_totals_view', 'hores_restants_view', 'marcatge_en_marxa_html', 'marcatges_relacionats')
     search_fields = ('treballador', 'dia')
-    list_filter = ('treballador', 'dia')
+    list_filter = ('treballador', 'dia', 'hores_totals', 'hores_restants')
     ordering = ['-dia', 'treballador']
     exclude = ('marcatges_relacionats_txt_backup',)
     inlines = [MarcatgeInline]
+    actions = ['assignar_hores_massiu', 'exportar_com_csv']
+    fields = [
+        "treballador",
+        "dia",
+        "hores_totals",
+        "hores_restants",
+        "forcar_jornada_diaria",
+        "nova_jornada_diaria",
+        "hores_ajustades",
+    ]
+    readonly_fields = [
+        'hores_totals',
+        'hores_restants',
+    ]
 
     def marcatges_relacionats(self, obj):
         return obj.marcatges_relacionats_txt
     marcatges_relacionats.short_description = 'Marcatges del dia'
 
     def jornada_diaria_view(self, obj):
-        return obj.treballador.jornada_diaria_view
+        if obj.forcar_jornada_diaria:
+            return obj.nova_jornada_diaria_view
+        else:
+            return obj.treballador.jornada_diaria_view
     jornada_diaria_view.short_description = 'Jornada Laboral'
 
     def hores_totals_view(self, obj):
         return obj.hores_totals_view
-    hores_totals_view.short_description = 'Hores totals'
+    hores_totals_view.short_description = 'Hores Treballades'
 
     def hores_restants_view(self, obj):
         return obj.hores_restants_view
-    hores_restants_view.short_description = 'Hores restants'
+    hores_restants_view.short_description = 'Hores Restants'
 
     def marcatge_en_marxa_html(self, obj):
         return obj.marcatge_en_marxa_html
@@ -158,8 +191,6 @@ class DiaTreballAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         # Es crearan autoamticament al fer un marcatge
         return False
-
-    actions = ['exportar_com_csv']
 
     def exportar_com_csv(self, request, queryset):
         response = HttpResponse(content_type='text/csv')
@@ -170,6 +201,51 @@ class DiaTreballAdmin(admin.ModelAdmin):
             writer.writerow([dia_treball.treballador.nom, dia_treball.dia, dia_treball.hores_totals_view, dia_treball.hores_restants_view, dia_treball.marcatges_relacionats_txt])
         return response
     exportar_com_csv.short_description = "Exportar com a CSV"
+
+    def assignar_hores_massiu(self, request, queryset):
+        selected = request.POST.getlist(ACTION_CHECKBOX_NAME)
+        return redirect(f'assignar-hores/?_selected_action={",".join(selected)}')
+    assignar_hores_massiu.short_description = "Modificar hores totals"
+
+    def assignar_hores_view(self, request):
+        if request.method == 'POST':
+            form = AssignarHoresMassiuForm(request.POST)
+            if form.is_valid():
+                ids_str = form.cleaned_data['_selected_action']
+                ids = literal_eval(ids_str)
+                hores = form.cleaned_data['hores']
+                dies = DiaTreball.objects.filter(pk__in=ids)
+
+                for dia in dies:
+                    dia.ajustar_a_x_hores(hores)
+
+                self.message_user(
+                    request,
+                    f"Hores assignades a {len(dies)} dies de treball.",
+                    messages.SUCCESS
+                )
+                return redirect('..')
+        else:
+            form = AssignarHoresMassiuForm(initial={
+                '_selected_action': request.GET.get('_selected_action', '')
+            })
+
+        context = {
+            'form': form,
+            'title': 'Modificar hores totals'
+        }
+        return render(request, 'admin/assignar_hores_massiu.html', context)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                'assignar-hores/',
+                self.admin_site.admin_view(self.assignar_hores_view),
+                name='assignar_hores_massiu'
+            ),
+        ]
+        return custom_urls + urls
 
 
 # Registra els models al panell d'administració

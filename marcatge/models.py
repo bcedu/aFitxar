@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from operator import truediv
 from random import randrange, choice
 
 from django.db import models
@@ -214,10 +215,16 @@ class Treballador(models.Model):
 class DiaTreball(models.Model):
     treballador = models.ForeignKey(Treballador, on_delete=models.CASCADE)
     dia = models.DateField()
-    hores_totals = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    hores_restants = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    hores_ajustades = models.BooleanField(default=False, null=True, blank=True)
+    hores_totals = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Hores Treballades")
+    hores_restants = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Hores Restants")
+    nova_jornada_diaria = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Jornada Laboral Asignada")
+    forcar_jornada_diaria = models.BooleanField(default=False, null=False, blank=False, verbose_name="Jornada laboral diferent de la del treballador?")
+    hores_ajustades = models.BooleanField(default=False, null=False, blank=True, verbose_name="Hores ja ajustades a la jornada")
     marcatges_relacionats_txt_backup = models.CharField(null=True, max_length=256)
+
+    class Meta:
+        verbose_name = "Dia"
+        verbose_name_plural = "Dies"
 
     @property
     def hores_totals_view(self):
@@ -248,6 +255,10 @@ class DiaTreball(models.Model):
         marcatges = Marcatge.objects.filter(treballador=self.treballador, data__date=self.dia)
         return ", ".join([f"{marcatge.tipus} - {marcatge.local_data.strftime('%H:%M')}" for marcatge in marcatges])
 
+    @property
+    def nova_jornada_diaria_view(self):
+        return format_as_hours(self.nova_jornada_diaria)
+
     def __str__(self):
         return f"Dia de treball per {self.treballador.nom} - {self.dia}"
 
@@ -263,20 +274,32 @@ class DiaTreball(models.Model):
                 hores_total += sortida - entrada
                 entrada = None
         self.hores_totals = hores_total.total_seconds() / 3600
-        self.hores_restants = self.treballador.jornada_diaria - Decimal(self.hores_totals)
+        jornada_diaria = self.treballador.jornada_diaria
+        if self.forcar_jornada_diaria:
+            jornada_diaria = self.nova_jornada_diaria
+        self.hores_restants = jornada_diaria - Decimal(self.hores_totals)
         self.save()
+
+    def ajustar_a_x_hores(self, hores, marge=0.0):
+        self.forcar_jornada_diaria = True
+        self.hores_ajustades = False
+        self.nova_jornada_diaria = hores
+        self.save()
+        self.ajustar_hores(marge=0)
+        return True
 
     def ajustar_hores(self, marge=0.15):
         if not self.hores_ajustades:
             self.marcatges_relacionats_txt_backup = self.marcatges_relacionats_txt
             self.save()
             self.ajustar_marcatges_erronis()
+            self.ajustar_marcatges_a_zero()
             self.actualitzar_hores_totals()
             self.save()
             if abs(float(self.hores_restants)) > marge:
                 # nomes ajustem hores si no es un dia festiu
                 calendari = Spain()
-                if calendari.is_working_day(self.dia):
+                if self.forcar_jornada_diaria or calendari.is_working_day(self.dia):
                     if self.hores_restants >= 0:
                         self.ajustar_hores_restants()
                     else:
@@ -284,6 +307,12 @@ class DiaTreball(models.Model):
                     self.actualitzar_hores_totals()
             self.hores_ajustades = True
             self.save()
+        return True
+
+    def ajustar_marcatges_a_zero(self):
+        if self.forcar_jornada_diaria and self.nova_jornada_diaria == 0:
+            for m in Marcatge.objects.filter(treballador=self.treballador, data__date=self.dia):
+                m.delete()
         return True
 
     def ajustar_marcatges_erronis(self):
