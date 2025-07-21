@@ -215,11 +215,26 @@ class Treballador(models.Model):
 class DiaTreball(models.Model):
     treballador = models.ForeignKey(Treballador, on_delete=models.CASCADE)
     dia = models.DateField()
-    hores_totals = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Hores Treballades")
-    hores_restants = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Hores Restants")
-    nova_jornada_diaria = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Jornada Laboral Asignada")
-    forcar_jornada_diaria = models.BooleanField(default=False, null=False, blank=False, verbose_name="Jornada laboral diferent de la del treballador?")
-    hores_ajustades = models.BooleanField(default=False, null=False, blank=True, verbose_name="Hores ja ajustades a la jornada")
+    hores_totals = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0, verbose_name="Hores Treballades",
+        help_text="Calculat automàticament a través dels marcatges."
+    )
+    hores_restants = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0, verbose_name="Hores Restants",
+        help_text="Calculat automàticament a través dels marcatges."
+    )
+    nova_jornada_diaria = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0, verbose_name="Jornada Laboral Asignada",
+        help_text="Emplenar si la jornada laboral d'aquest dia és diferent a la jornada laboral configurada en el treballador."
+    )
+    forcar_jornada_diaria = models.BooleanField(
+        default=False, null=False, blank=False, verbose_name="Jornada laboral diferent de la del treballador?",
+        help_text="Marcar si la jornada laboral d'aquest dia és diferent a la jornada laboral configurada en el treballador."
+    )
+    hores_ajustades = models.BooleanField(
+        default=False, null=False, blank=True, verbose_name="Hores ja ajustades a la jornada",
+        help_text="Indica si el procés automàtic que corregeix els marcatges ja ha ajustat els marcatges d'aquest dia per fer-los coincidir amb la jornada laboral. Si ja s'ha marcat, no es tornaran a ajustar automàticament. Si es desmarca, a la nit s'ajustaran els marcatges per fer-los coincidir amb la jornada laboral configurada."
+    )
     marcatges_relacionats_txt_backup = models.CharField(null=True, max_length=256)
 
     class Meta:
@@ -263,6 +278,10 @@ class DiaTreball(models.Model):
         return f"Dia de treball per {self.treballador.nom} - {self.dia}"
 
     def actualitzar_hores_totals(self):
+        self.actualitzar_hores_totals_no_save()
+        self.save()
+
+    def actualitzar_hores_totals_no_save(self):
         marcatges = Marcatge.objects.filter(treballador=self.treballador, dia_treball=self)
         hores_total = timedelta()
         entrada = None
@@ -278,7 +297,6 @@ class DiaTreball(models.Model):
         if self.forcar_jornada_diaria:
             jornada_diaria = self.nova_jornada_diaria
         self.hores_restants = jornada_diaria - Decimal(self.hores_totals)
-        self.save()
 
     def ajustar_a_x_hores(self, hores, marge=0.0):
         self.forcar_jornada_diaria = True
@@ -448,23 +466,31 @@ class Marcatge(models.Model):
 # Signal per crear/actualitzar automàticament un DiaTreball quan es fa un nou marcatge
 @receiver(post_save, sender=Marcatge)
 def crear_dia_de_treball(sender, instance, created, **kwargs):
-    if created:
+    if created or instance.pk:
         treballador = instance.treballador
         dia = instance.data.date()
-        dia_de_treball, created = DiaTreball.objects.get_or_create(
+        dia_de_treball, dia_creat = DiaTreball.objects.get_or_create(
             treballador=treballador, dia=dia
         )
-        instance.dia_treball = dia_de_treball
-        instance.save()
+        if created:
+            instance.dia_treball = dia_de_treball
+            instance.save()
         dia_de_treball.actualitzar_hores_totals()
 
-
-# Signal que s'activa abans de guardar l'objecte Treballador
+# Signal per actualitzar automàticament un DiaTreball quan es modifica un marcatge
 @receiver(pre_save, sender=Treballador)
-def actualitzar_hores_totals_signal(sender, instance, **kwargs):
+def actualitzar_hores_totals_treballador_signal(sender, instance, **kwargs):
     if instance.pk:
         old_instance = Treballador.objects.get(pk=instance.pk)
         if old_instance.jornada_diaria != instance.jornada_diaria:
             for dia in DiaTreball.objects.filter(treballador=instance):
                 dia.treballador = instance
                 dia.actualitzar_hores_totals()
+
+# Signal per actualitzar automàticament un DiaTreball quan es modifica la jornada diaria
+@receiver(pre_save, sender=DiaTreball)
+def actualitzar_hores_totals_dia_signal(sender, instance, **kwargs):
+    if instance.pk:
+        old_instance = DiaTreball.objects.get(pk=instance.pk)
+        if (old_instance.nova_jornada_diaria != instance.nova_jornada_diaria) or (old_instance.forcar_jornada_diaria != instance.forcar_jornada_diaria):
+            instance.actualitzar_hores_totals_no_save()
