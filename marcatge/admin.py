@@ -209,9 +209,10 @@ class DiaTreballAdmin(admin.ModelAdmin):
         form = AssignarHoresMassiuForm(initial={'dies': queryset})
         context = {
             'form': form,
-            'title': 'Assignar hores massiu',
+            'title': 'Modificar hores treballades',
         }
         return render(request, 'admin/assignar_hores_massiu.html', context)
+    assignar_hores_massiu.short_description = "Modificar hores treballades"
 
     def processar_assignacio_hores(self, request):
         if request.method == 'POST':
@@ -221,8 +222,8 @@ class DiaTreballAdmin(admin.ModelAdmin):
                 hores = form.cleaned_data['hores']
                 for dia in dies:
                     dia.ajustar_a_x_hores(hores)
-                self.message_user(request, f"Hores assignades a {dies.count()} dies.", messages.SUCCESS)
-                return redirect('..')
+                self.message_user(request, f"Hores modificades a {dies.count()} dies.", messages.SUCCESS)
+                return redirect('../..')
         else:
             form = AssignarHoresMassiuForm()
 

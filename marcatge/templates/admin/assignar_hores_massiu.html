@@ -1,18 +1,53 @@
 {% extends "admin/base_site.html" %}
+
 {% block content %}
-  <h1>{{ title }}</h1>
-  <form method="post" action="{% url 'admin:assignar_hores_massiu' %}">
+  <form method="post" action="{% url 'admin:assignar_hores_massiu' %}" novalidate>
     {% csrf_token %}
     {% for hidden in form.hidden_fields %}
       {{ hidden }}
     {% endfor %}
 
-    <div>
-      {{ form.hores.label_tag }} {{ form.hores }}
-      {{ form.hores.errors }}
+    <div class="form-group">
+      <label for="{{ form.hores.id_for_label }}">{{ form.hores.label }}</label>
+      {{ form.hores }}
+      {% if form.hores.errors %}
+        <div class="invalid-feedback d-block">
+          {{ form.hores.errors }}
+        </div>
+      {% endif %}
     </div>
 
-    <input type="submit" value="Assignar hores" class="default">
-    <a href=".." class="button">Cancel·la</a>
+    <div class="form-group mt-3">
+      <button type="submit" class="btn btn-info">Modificar hores</button>
+      <a href=".." class="btn btn-danger">Cancel·la</a>
+    </div>
   </form>
+
+  <style>
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600; /* opcional per posar el label més professional */
+    }
+
+    input#{{ form.hores.id_for_label }} {
+      display: block;
+      width: 100%;
+      padding: .375rem .75rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: #495057;
+      background-color: #fff;
+      background-clip: padding-box;
+      border: 1px solid #ced4da;
+      border-radius: .25rem;
+      transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+
+    input#{{ form.hores.id_for_label }}:focus {
+      border-color: #80bdff;
+      outline: 0;
+      box-shadow: 0 0 0 .2rem rgba(0,123,255,.25);
+    }
+  </style>
 {% endblock %}
