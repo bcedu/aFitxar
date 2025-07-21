@@ -17,7 +17,10 @@ from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 from ast import literal_eval
 
 class AssignarHoresMassiuForm(forms.Form):
-    _selected_action = forms.CharField(widget=forms.MultipleHiddenInput)
+    dies = forms.ModelMultipleChoiceField(
+        queryset=DiaTreball.objects.all(),
+        widget=forms.MultipleHiddenInput
+    )
     hores = forms.DecimalField(label="Hores a assignar", min_value=0)
 
 
@@ -203,47 +206,36 @@ class DiaTreballAdmin(admin.ModelAdmin):
     exportar_com_csv.short_description = "Exportar com a CSV"
 
     def assignar_hores_massiu(self, request, queryset):
-        selected = request.POST.getlist(ACTION_CHECKBOX_NAME)
-        return redirect(f'assignar-hores/?_selected_action={",".join(selected)}')
-    assignar_hores_massiu.short_description = "Modificar hores totals"
+        form = AssignarHoresMassiuForm(initial={'dies': queryset})
+        context = {
+            'form': form,
+            'title': 'Assignar hores massiu',
+        }
+        return render(request, 'admin/assignar_hores_massiu.html', context)
 
-    def assignar_hores_view(self, request):
+    def processar_assignacio_hores(self, request):
         if request.method == 'POST':
             form = AssignarHoresMassiuForm(request.POST)
             if form.is_valid():
-                ids_str = form.cleaned_data['_selected_action']
-                ids = literal_eval(ids_str)
+                dies = form.cleaned_data['dies']
                 hores = form.cleaned_data['hores']
-                dies = DiaTreball.objects.filter(pk__in=ids)
-
                 for dia in dies:
                     dia.ajustar_a_x_hores(hores)
-
-                self.message_user(
-                    request,
-                    f"Hores assignades a {len(dies)} dies de treball.",
-                    messages.SUCCESS
-                )
+                self.message_user(request, f"Hores assignades a {dies.count()} dies.", messages.SUCCESS)
                 return redirect('..')
         else:
-            form = AssignarHoresMassiuForm(initial={
-                '_selected_action': request.GET.get('_selected_action', '')
-            })
+            form = AssignarHoresMassiuForm()
 
-        context = {
+        return render(request, 'admin/assignar_hores_massiu.html', {
             'form': form,
-            'title': 'Modificar hores totals'
-        }
-        return render(request, 'admin/assignar_hores_massiu.html', context)
+            'title': 'Error al formulari',
+        })
 
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path(
-                'assignar-hores/',
-                self.admin_site.admin_view(self.assignar_hores_view),
-                name='assignar_hores_massiu'
-            ),
+            path('assignar-hores/processar/', self.admin_site.admin_view(self.processar_assignacio_hores),
+                 name='assignar_hores_massiu')
         ]
         return custom_urls + urls
 
